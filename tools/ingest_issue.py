@@ -9,9 +9,11 @@ DATA_JSON = "data/words.json"
 DATA_CSV = "data/words.csv"
 
 def parse_field(label: str) -> str:
-    # GitHub Issue form renders Markdown like:
-    # ### Word
-    # conflict
+    """
+    Parse a GitHub Issue Form field rendered in Markdown:
+      ### Label
+      value
+    """
     pattern = rf"^### {re.escape(label)}\s*\n(.+?)(?=\n### |\Z)"
     m = re.search(pattern, ISSUE_BODY, flags=re.MULTILINE | re.DOTALL)
     if not m:
@@ -20,6 +22,14 @@ def parse_field(label: str) -> str:
     if val == "_No response_":
         return ""
     return val
+
+def parse_any(labels):
+    """Return first non-empty field among possible labels."""
+    for lb in labels:
+        v = parse_field(lb)
+        if v.strip():
+            return v
+    return ""
 
 def split_csv_like(s: str):
     parts = [p.strip() for p in s.split(",") if p.strip()]
@@ -78,19 +88,54 @@ def find_index(items, word: str):
     return -1
 
 def main():
-    word = parse_field("Word").strip()
+    # Accept both template variants (label text may differ over time)
+    word = parse_any([
+        "Word",
+        "Word (must match existing)",
+    ]).strip()
     if not word:
         raise SystemExit("Word is required but missing.")
 
-    # Read incoming fields (may be empty => means 'no change' for updates)
-    incoming_pos = parse_field("Part of speech").strip()
-    incoming_other = parse_field("Other spelling (UK/US if different)").strip()
-    incoming_pron = parse_field("Pronunciation (IPA etc.)").strip()
-    incoming_meaning = parse_field("Meaning (Japanese)").strip()
-    incoming_examples_raw = parse_field("Examples (one per line)")
-    incoming_syn_raw = parse_field("Synonyms (comma-separated)")
-    incoming_tags_raw = parse_field("Tags (comma-separated)")
-    incoming_notes = parse_field("Notes").strip()
+    incoming_pos = parse_any([
+        "Part of speech",
+        "Part of Speech",
+    ]).strip()
+
+    incoming_other = parse_any([
+        "Other spelling (UK/US if different)",
+        "Other spelling (if different)",
+        "Other spelling",
+    ]).strip()
+
+    incoming_pron = parse_any([
+        "Pronunciation (IPA etc.)",
+        "Pronunciation",
+    ]).strip()
+
+    incoming_meaning = parse_any([
+        "Meaning (Japanese)",
+        "Meaning (JP)",
+        "Meaning",
+    ]).strip()
+
+    incoming_examples_raw = parse_any([
+        "Examples (one per line)",
+        "Examples",
+    ])
+
+    incoming_syn_raw = parse_any([
+        "Synonyms (comma-separated)",
+        "Synonyms",
+    ])
+
+    incoming_tags_raw = parse_any([
+        "Tags (comma-separated)",
+        "Tags",
+    ])
+
+    incoming_notes = parse_any([
+        "Notes",
+    ]).strip()
 
     incoming_examples = [l.strip() for l in incoming_examples_raw.splitlines() if l.strip()] if incoming_examples_raw.strip() else []
     incoming_synonyms = split_csv_like(incoming_syn_raw) if incoming_syn_raw.strip() else []
@@ -103,7 +148,7 @@ def main():
     source = ISSUE_URL or f"#{ISSUE_NUMBER}"
 
     if idx == -1:
-        # New entry: require minimum fields
+        # New entry: require minimum information
         if not incoming_meaning:
             raise SystemExit("Meaning (Japanese) is required for a new word.")
         entry = {
@@ -124,10 +169,10 @@ def main():
         items.append(entry)
         status = "added"
     else:
-        # Update entry: only overwrite fields that are provided (non-empty)
+        # Update entry: only apply non-empty fields; keep existing otherwise
         it = items[idx]
 
-        # Always keep canonical word formatting as existing? We'll set to the provided word.
+        # Keep canonical word (but normalize formatting)
         it["word"] = word
 
         if incoming_pos:
@@ -139,7 +184,7 @@ def main():
         if incoming_meaning:
             it["meaning_ja"] = incoming_meaning
 
-        # Lists: only replace if provided
+        # Lists: replace only if user provided something (including explicit empty lines not possible)
         if incoming_examples_raw.strip():
             it["examples"] = incoming_examples
         if incoming_syn_raw.strip():
@@ -150,16 +195,12 @@ def main():
         if incoming_notes:
             it["notes"] = incoming_notes
 
-        # Keep created_at if exists, else set
         it["created_at"] = it.get("created_at") or now_iso
-
-        # Update source_issue to the latest edit issue (handy for audit)
         it["source_issue"] = source
 
         items[idx] = it
         status = "updated"
 
-    # sort by word
     items.sort(key=lambda x: x.get("word","").lower())
     save_json(items)
     save_csv(items)
