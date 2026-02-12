@@ -15,7 +15,6 @@
       --shadow-sm: 0 6px 16px rgba(0,0,0,.06);
       --radius: 16px;
       --accent:#4f46e5;
-      --accentSoft: rgba(79,70,229,.12);
     }
     body{
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -42,7 +41,7 @@
       width: min(720px, 100%);
       justify-content:flex-end;
     }
-    input, select, button{
+    input, select, button, a.btn{
       font-size: 14px;
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -113,20 +112,7 @@
       color: var(--muted);
       font-size: 12px;
       margin-top: 4px;
-    }
-    .chips{
-      display:flex;
-      gap:6px;
-      flex-wrap:wrap;
-    }
-    .chip{
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 3px 10px;
-      font-size: 12px;
-      background: #fafafa;
-      color: #374151;
-      white-space: nowrap;
+      line-height: 1.4;
     }
     .pill{
       display:inline-flex;
@@ -136,6 +122,17 @@
       border-radius: 999px;
       border: 1px solid var(--border);
       background: #fff;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    @media (max-width: 720px){
+      thead th:nth-child(3),
+      tbody td:nth-child(3),
+      thead th:nth-child(4),
+      tbody td:nth-child(4){
+        display:none;
+      }
     }
 
     /* Modal */
@@ -179,14 +176,27 @@
       color: var(--muted);
       font-size: 13px;
     }
-    .closeBtn{
-      border: 1px solid var(--border);
-      background: #fff;
-      border-radius: 12px;
-      padding: 10px 12px;
-      cursor: pointer;
-      font-size: 14px;
+    .btnRow{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
+    a.btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      color: #111827;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    a.btn:hover{ text-decoration:none; border-color:#d1d5db; }
+    .primary{
+      border-color: rgba(79,70,229,.25);
+      box-shadow: 0 0 0 4px rgba(99,102,241,.08);
+    }
+
     .section{
       margin-top: 12px;
     }
@@ -212,17 +222,6 @@
       border-radius: 12px;
       padding: 10px 12px;
       white-space: pre-wrap;
-    }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover{ text-decoration: underline; }
-
-    @media (max-width: 720px){
-      thead th:nth-child(3),
-      tbody td:nth-child(3),
-      thead th:nth-child(4),
-      tbody td:nth-child(4){
-        display:none;
-      }
     }
   </style>
 </head>
@@ -271,12 +270,17 @@
           <h2 class="modalTitle" id="modalTitle"></h2>
           <div class="modalSub" id="modalSub"></div>
         </div>
-        <button class="closeBtn" id="closeBtn">閉じる (Esc)</button>
+        <div class="btnRow">
+          <a class="btn primary" id="editBtn" href="#" target="_blank" rel="noreferrer">✏️ GitHubで修正</a>
+          <a class="btn" id="copyBtn" href="#">📋 コピー</a>
+          <a class="btn" id="closeBtn" href="#">閉じる (Esc)</a>
+        </div>
       </div>
 
       <div class="section">
         <h3>Meaning</h3>
         <div id="modalMeaning"></div>
+        <div class="sub" id="modalVariant" style="display:none;"></div>
       </div>
 
       <div class="section" id="examplesSection" style="display:none;">
@@ -284,14 +288,14 @@
         <ul class="ex" id="modalExamples"></ul>
       </div>
 
-      <div class="section" id="chipsSection" style="display:none;">
-        <h3>Tags / Synonyms</h3>
-        <div class="chips" id="modalChips"></div>
-      </div>
-
       <div class="section" id="notesSection" style="display:none;">
         <h3>Notes</h3>
         <div class="mono" id="modalNotes"></div>
+      </div>
+
+      <div class="section">
+        <h3>Tags / Synonyms</h3>
+        <div class="meta" id="modalTagsSyn"></div>
       </div>
 
       <div class="section">
@@ -326,15 +330,32 @@ function parseDateSafe(iso){
 function fmtDate(iso){
   const d = parseDateSafe(iso);
   if (!d) return "";
-  // 例: 2026-02-12
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,"0");
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
 
+function repoInfo(){
+  const user = (location.hostname || "").split(".")[0] || "";
+  const segs = (location.pathname || "").split("/").filter(Boolean);
+  const repo = segs[0] || "";
+  return { user, repo };
+}
+function updateIssueUrlFor(word){
+  const { user, repo } = repoInfo();
+  if (!user || !repo) return "#";
+  // update_word.yml を作る想定（下の説明参照）
+  const base = `https://github.com/${user}/${repo}/issues/new`;
+  const params = new URLSearchParams();
+  params.set("template", "update_word.yml");
+  params.set("title", `word: ${word}`);
+  return `${base}?${params.toString()}`;
+}
+
 let data = [];
 let current = [];
+let selected = null;
 
 function sortList(list, mode){
   const out = [...list];
@@ -362,11 +383,13 @@ function render(list){
   tbody.innerHTML = list.map(it => {
     const pos = it.part_of_speech || "";
     const created = fmtDate(it.created_at || "");
+    const pronunciation = (it.pronunciation || "").trim();
+    const sub = [pronunciation].filter(Boolean).join(" ");
     return `
       <tr data-word="${escapeHtml(it.word)}" tabindex="0">
         <td>
           <div class="word">${escapeHtml(it.word)}</div>
-          <div class="sub">${escapeHtml(it.pronunciation || "")}</div>
+          <div class="sub">${escapeHtml(sub)}</div>
         </td>
         <td>${escapeHtml(it.meaning_ja || "")}</td>
         <td>${escapeHtml(pos)}</td>
@@ -387,6 +410,7 @@ function applyFilters(){
     list = data.filter(it => {
       const hay = [
         it.word, it.meaning_ja, it.part_of_speech, it.pronunciation, it.notes,
+        it.other_spelling,
         ...(it.tags||[]), ...(it.synonyms||[]), ...(it.examples||[])
       ].map(norm).join(" ");
       return hay.includes(nq);
@@ -404,17 +428,29 @@ function findByWord(word){
 
 /* Modal */
 const backdrop = document.getElementById("backdrop");
-const closeBtn = document.getElementById("closeBtn");
 
 function openModal(item){
   if (!item) return;
+  selected = item;
 
   document.getElementById("modalTitle").textContent = item.word || "";
   document.getElementById("modalSub").textContent =
     [item.part_of_speech, item.pronunciation].filter(Boolean).join("  ");
 
+  // Meaning
   document.getElementById("modalMeaning").textContent = item.meaning_ja || "";
 
+  // Variant spelling (other_spelling)
+  const variantEl = document.getElementById("modalVariant");
+  if ((item.other_spelling || "").trim()) {
+    variantEl.textContent = `Variant spelling: ${item.other_spelling}`;
+    variantEl.style.display = "";
+  } else {
+    variantEl.textContent = "";
+    variantEl.style.display = "none";
+  }
+
+  // Examples
   const exList = document.getElementById("modalExamples");
   const examples = (item.examples || []).filter(Boolean);
   if (examples.length) {
@@ -425,16 +461,7 @@ function openModal(item){
     document.getElementById("examplesSection").style.display = "none";
   }
 
-  const chips = [...(item.tags||[]), ...(item.synonyms||[])].filter(Boolean);
-  const chipsEl = document.getElementById("modalChips");
-  if (chips.length) {
-    chipsEl.innerHTML = chips.map(t => `<span class="chip">${escapeHtml(t)}</span>`).join("");
-    document.getElementById("chipsSection").style.display = "";
-  } else {
-    chipsEl.innerHTML = "";
-    document.getElementById("chipsSection").style.display = "none";
-  }
-
+  // Notes
   const notes = (item.notes || "").trim();
   const notesEl = document.getElementById("modalNotes");
   if (notes) {
@@ -445,11 +472,23 @@ function openModal(item){
     document.getElementById("notesSection").style.display = "none";
   }
 
+  // Tags / Synonyms
+  const tags = (item.tags || []).filter(Boolean);
+  const syns = (item.synonyms || []).filter(Boolean);
+  const tagText = tags.length ? `Tags: ${tags.join(", ")}` : "Tags: -";
+  const synText = syns.length ? `Synonyms: ${syns.join(", ")}` : "Synonyms: -";
+  document.getElementById("modalTagsSyn").textContent = `${tagText}  /  ${synText}`;
+
+  // Source
   const src = item.source_issue || "";
   document.getElementById("modalSource").innerHTML =
     src.startsWith("http")
       ? `<a href="${escapeHtml(src)}" target="_blank" rel="noreferrer">Issue link</a>`
       : escapeHtml(src);
+
+  // Edit button -> opens update issue form (template=update_word.yml)
+  const editBtn = document.getElementById("editBtn");
+  editBtn.href = updateIssueUrlFor(item.word);
 
   backdrop.classList.add("open");
   backdrop.setAttribute("aria-hidden", "false");
@@ -458,12 +497,18 @@ function openModal(item){
 function closeModal(){
   backdrop.classList.remove("open");
   backdrop.setAttribute("aria-hidden", "true");
+  selected = null;
 }
 
 backdrop.addEventListener("click", (e) => {
   if (e.target === backdrop) closeModal();
 });
-closeBtn.addEventListener("click", closeModal);
+
+document.getElementById("closeBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+  closeModal();
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
@@ -478,6 +523,37 @@ document.getElementById("tbody").addEventListener("keydown", (e) => {
   const tr = e.target.closest("tr");
   if (!tr) return;
   openModal(findByWord(tr.getAttribute("data-word")));
+});
+
+// Copy button: copies current entry summary to clipboard (paste into update form if needed)
+document.getElementById("copyBtn").addEventListener("click", async (e) => {
+  e.preventDefault();
+  if (!selected) return;
+
+  const lines = [];
+  lines.push(`Word: ${selected.word || ""}`);
+  lines.push(`Part of speech: ${selected.part_of_speech || ""}`);
+  if ((selected.other_spelling || "").trim()) lines.push(`Other spelling: ${selected.other_spelling}`);
+  if ((selected.pronunciation || "").trim()) lines.push(`Pronunciation: ${selected.pronunciation}`);
+  if ((selected.meaning_ja || "").trim()) lines.push(`Meaning: ${selected.meaning_ja}`);
+  const ex = (selected.examples || []).filter(Boolean);
+  if (ex.length) lines.push(`Examples:\n- ${ex.join("\n- ")}`);
+  const tags = (selected.tags || []).filter(Boolean);
+  if (tags.length) lines.push(`Tags: ${tags.join(", ")}`);
+  const syns = (selected.synonyms || []).filter(Boolean);
+  if (syns.length) lines.push(`Synonyms: ${syns.join(", ")}`);
+  if ((selected.notes || "").trim()) lines.push(`Notes:\n${selected.notes}`);
+
+  const text = lines.join("\n");
+
+  try {
+    await navigator.clipboard.writeText(text);
+    document.getElementById("count").textContent = "Copied ✅";
+    setTimeout(() => applyFilters(), 900);
+  } catch {
+    // Fallback
+    prompt("コピーできなかったので手動コピーしてね:", text);
+  }
 });
 
 window.addEventListener("error", (e) => {
