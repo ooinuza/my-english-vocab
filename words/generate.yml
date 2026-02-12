@@ -1,1 +1,18 @@
-
+word: generate
+part_of_speech: verb
+pronunciation: /ˈdʒenəreɪt/
+meaning_ja: 生み出す、生成する
+examples:
+  - The engine generates electricity.
+  - Ideas generate change.
+mastery: 0
+last_reviewed: null
+synonyms:
+  - produce
+  - create
+related:
+  - generation
+tags:
+  - academic
+notes: >
+  gene（生む）と関連。createより少しフォーマル。
