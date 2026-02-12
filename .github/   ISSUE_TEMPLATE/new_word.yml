@@ -1,7 +1,8 @@
 name: New word
 description: Add a new vocabulary entry
 title: "word: "
-labels: ["vocab"]
+labels:
+  - vocab
 body:
   - type: input
     id: word
@@ -62,4 +63,4 @@ body:
   - type: textarea
     id: notes
     attributes:
-      label: Note
+      label: Notes
