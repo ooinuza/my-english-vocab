@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   ingest:
-    if: contains(github.event.issue.labels.*.name, 'vocab')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
