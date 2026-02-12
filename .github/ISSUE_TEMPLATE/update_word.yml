@@ -1,5 +1,5 @@
 name: Update word
-description: Update an existing vocabulary entry
+description: Update an existing vocabulary entry (only filled fields will be updated)
 title: "update: "
 labels:
   - vocab
@@ -8,22 +8,23 @@ body:
     attributes:
       value: |
         既存の単語を更新します。
-        Word は必ず既存の綴りと同じにしてください。
-        同じ word なら自動で上書き更新されます。
+        ✅ 空欄は「変更しない」扱いになります。
+        ✅ Part of speech は (no change) のままなら変更されません。
 
   - type: input
     id: word
     attributes:
       label: Word (must match existing)
-      placeholder: color
+      placeholder: conflict
     validations:
       required: true
 
   - type: dropdown
     id: pos
     attributes:
-      label: Part of speech
+      label: Part of speech (choose only if you want to change)
       options:
+        - "(no change)"
         - noun
         - verb
         - adjective
@@ -41,28 +42,32 @@ body:
     id: pronunciation
     attributes:
       label: Pronunciation (IPA etc.)
-      placeholder: /ˈkʌlər/
+      placeholder: /ˈkɒnflɪkt/
 
   - type: input
     id: meaning_ja
     attributes:
       label: Meaning (Japanese)
-      placeholder: 色
+      placeholder: 衝突、対立
 
   - type: textarea
     id: examples
     attributes:
       label: Examples (one per line)
+      placeholder: |
+        His statements on the subject conflicted.
 
   - type: input
     id: synonyms
     attributes:
       label: Synonyms (comma-separated)
+      placeholder: clash, dispute
 
   - type: input
     id: tags
     attributes:
       label: Tags (comma-separated)
+      placeholder: news, academic
 
   - type: textarea
     id: notes
