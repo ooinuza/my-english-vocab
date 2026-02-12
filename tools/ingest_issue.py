@@ -9,6 +9,9 @@ DATA_JSON = "data/words.json"
 DATA_CSV = "data/words.csv"
 
 def parse_field(label: str) -> str:
+    # GitHub Issue form renders Markdown like:
+    # ### Word
+    # conflict
     pattern = rf"^### {re.escape(label)}\s*\n(.+?)(?=\n### |\Z)"
     m = re.search(pattern, ISSUE_BODY, flags=re.MULTILINE | re.DOTALL)
     if not m:
@@ -67,39 +70,96 @@ def save_csv(items):
                 "source_issue": it.get("source_issue",""),
             })
 
-def upsert(items, entry):
-    key = entry["word"].strip().lower()
+def find_index(items, word: str):
+    key = (word or "").strip().lower()
     for i, it in enumerate(items):
-        if it.get("word","").strip().lower() == key:
-            entry["created_at"] = it.get("created_at", entry["created_at"])
-            items[i] = entry
-            return "updated"
-    items.append(entry)
-    return "added"
+        if (it.get("word","").strip().lower() == key):
+            return i
+    return -1
 
 def main():
-    word = parse_field("Word")
+    word = parse_field("Word").strip()
     if not word:
         raise SystemExit("Word is required but missing.")
 
-    entry = {
-        "word": word.strip(),
-        "part_of_speech": parse_field("Part of speech").strip(),
-        "other_spelling": parse_field("Other spelling (UK/US if different)").strip(),
-        "pronunciation": parse_field("Pronunciation (IPA etc.)").strip(),
-        "meaning_ja": parse_field("Meaning (Japanese)").strip(),
-        "examples": [l.strip() for l in parse_field("Examples (one per line)").splitlines() if l.strip()],
-        "synonyms": split_csv_like(parse_field("Synonyms (comma-separated)")),
-        "tags": split_csv_like(parse_field("Tags (comma-separated)")),
-        "notes": parse_field("Notes").strip(),
-        "mastery": 0,
-        "last_reviewed": "",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "source_issue": ISSUE_URL or f"#{ISSUE_NUMBER}",
-    }
+    # Read incoming fields (may be empty => means 'no change' for updates)
+    incoming_pos = parse_field("Part of speech").strip()
+    incoming_other = parse_field("Other spelling (UK/US if different)").strip()
+    incoming_pron = parse_field("Pronunciation (IPA etc.)").strip()
+    incoming_meaning = parse_field("Meaning (Japanese)").strip()
+    incoming_examples_raw = parse_field("Examples (one per line)")
+    incoming_syn_raw = parse_field("Synonyms (comma-separated)")
+    incoming_tags_raw = parse_field("Tags (comma-separated)")
+    incoming_notes = parse_field("Notes").strip()
+
+    incoming_examples = [l.strip() for l in incoming_examples_raw.splitlines() if l.strip()] if incoming_examples_raw.strip() else []
+    incoming_synonyms = split_csv_like(incoming_syn_raw) if incoming_syn_raw.strip() else []
+    incoming_tags = split_csv_like(incoming_tags_raw) if incoming_tags_raw.strip() else []
 
     items = load_json()
-    status = upsert(items, entry)
+    idx = find_index(items, word)
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    source = ISSUE_URL or f"#{ISSUE_NUMBER}"
+
+    if idx == -1:
+        # New entry: require minimum fields
+        if not incoming_meaning:
+            raise SystemExit("Meaning (Japanese) is required for a new word.")
+        entry = {
+            "word": word,
+            "part_of_speech": incoming_pos,
+            "other_spelling": incoming_other,
+            "pronunciation": incoming_pron,
+            "meaning_ja": incoming_meaning,
+            "examples": incoming_examples,
+            "synonyms": incoming_synonyms,
+            "tags": incoming_tags,
+            "notes": incoming_notes,
+            "mastery": 0,
+            "last_reviewed": "",
+            "created_at": now_iso,
+            "source_issue": source,
+        }
+        items.append(entry)
+        status = "added"
+    else:
+        # Update entry: only overwrite fields that are provided (non-empty)
+        it = items[idx]
+
+        # Always keep canonical word formatting as existing? We'll set to the provided word.
+        it["word"] = word
+
+        if incoming_pos:
+            it["part_of_speech"] = incoming_pos
+        if incoming_other:
+            it["other_spelling"] = incoming_other
+        if incoming_pron:
+            it["pronunciation"] = incoming_pron
+        if incoming_meaning:
+            it["meaning_ja"] = incoming_meaning
+
+        # Lists: only replace if provided
+        if incoming_examples_raw.strip():
+            it["examples"] = incoming_examples
+        if incoming_syn_raw.strip():
+            it["synonyms"] = incoming_synonyms
+        if incoming_tags_raw.strip():
+            it["tags"] = incoming_tags
+
+        if incoming_notes:
+            it["notes"] = incoming_notes
+
+        # Keep created_at if exists, else set
+        it["created_at"] = it.get("created_at") or now_iso
+
+        # Update source_issue to the latest edit issue (handy for audit)
+        it["source_issue"] = source
+
+        items[idx] = it
+        status = "updated"
+
+    # sort by word
     items.sort(key=lambda x: x.get("word","").lower())
     save_json(items)
     save_csv(items)
