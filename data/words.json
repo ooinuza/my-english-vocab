@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "word": "conflict",
+    "part_of_speech": "noun",
+    "pronunciation": "kˈɔnflɪkt",
+    "meaning_ja": "戦い、争い、闘争、戦闘、(主義・主張上の)争い、争議、論争、口論、(思想・利害などの)衝突",
+    "examples": [
+      "His statements on the subject conflicted."
+    ],
+    "synonyms": [
+      "struggle"
+    ],
+    "tags": [],
+    "notes": "",
+    "mastery": 0,
+    "last_reviewed": "",
+    "created_at": "2026-02-12T09:05:09.917586+00:00",
+    "source_issue": "https://github.com/ooinuza/my-english-vocab/issues/1"
+  }
+]
