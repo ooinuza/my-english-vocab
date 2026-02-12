@@ -1,5 +1,5 @@
 name: New word
-description: Add a new vocabulary entry
+description: Add a word
 title: "word: "
 labels:
   - vocab
@@ -11,56 +11,3 @@ body:
       placeholder: generate
     validations:
       required: true
-
-  - type: dropdown
-    id: pos
-    attributes:
-      label: Part of speech
-      options:
-        - noun
-        - verb
-        - adjective
-        - adverb
-        - phrase
-        - other
-    validations:
-      required: true
-
-  - type: input
-    id: pronunciation
-    attributes:
-      label: Pronunciation (IPA etc.)
-      placeholder: /ˈdʒenəreɪt/
-
-  - type: input
-    id: meaning_ja
-    attributes:
-      label: Meaning (Japanese)
-      placeholder: 生み出す、生成する
-    validations:
-      required: true
-
-  - type: textarea
-    id: examples
-    attributes:
-      label: Examples (one per line)
-      placeholder: |
-        The engine generates electricity.
-        Ideas generate change.
-
-  - type: input
-    id: synonyms
-    attributes:
-      label: Synonyms (comma-separated)
-      placeholder: produce, create
-
-  - type: input
-    id: tags
-    attributes:
-      label: Tags (comma-separated)
-      placeholder: academic, news
-
-  - type: textarea
-    id: notes
-    attributes:
-      label: Notes
