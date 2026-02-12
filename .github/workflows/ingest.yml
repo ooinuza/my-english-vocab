@@ -11,20 +11,40 @@ permissions:
 jobs:
   ingest:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Ingest issue into data files
+      - name: Run ingest script
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           python tools/ingest_issue.py
+
+      - name: Debug output
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          echo "==== ISSUE_BODY length ===="
+          python - << 'PY'
+import os
+b = os.environ.get("ISSUE_BODY","")
+print(len(b))
+print("==== FIRST 500 CHARS ====")
+print(b[:500])
+PY
+          echo "==== data/words.json ===="
+          cat data/words.json || true
+          echo "==== git status ===="
+          git status --porcelain
 
       - name: Copy data into docs for Pages
         run: |
