@@ -14,40 +14,49 @@
       --shadow: 0 10px 24px rgba(0,0,0,.08);
       --shadow-sm: 0 6px 16px rgba(0,0,0,.06);
       --radius: 16px;
+      --accent:#4f46e5;
+      --accentSoft: rgba(79,70,229,.12);
     }
     body{
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       margin: 24px;
       background: var(--bg);
       color: var(--text);
-      max-width: 980px;
+      max-width: 1080px;
     }
     header{
       display:flex;
       gap:12px;
-      align-items:center;
+      align-items:flex-end;
       justify-content:space-between;
       flex-wrap:wrap;
       margin-bottom: 12px;
     }
     h1{ margin:0; font-size: 28px; letter-spacing: .2px; }
-    .search{
+
+    .controls{
       display:flex;
       gap:10px;
       align-items:center;
-      width: min(560px, 100%);
+      flex-wrap:wrap;
+      width: min(720px, 100%);
+      justify-content:flex-end;
     }
-    input{
-      padding:12px 14px;
-      font-size:16px;
-      width: 100%;
+    input, select, button{
+      font-size: 14px;
       border: 1px solid var(--border);
       border-radius: 12px;
-      outline: none;
       background: #fff;
+      padding: 10px 12px;
+      outline: none;
       box-shadow: 0 1px 0 rgba(0,0,0,.02);
     }
-    input:focus{
+    input{
+      width: min(420px, 100%);
+      font-size:16px;
+      padding: 12px 14px;
+    }
+    input:focus, select:focus{
       border-color:#c7d2fe;
       box-shadow: 0 0 0 4px rgba(99,102,241,.15);
     }
@@ -56,38 +65,77 @@
       font-size: 13px;
       margin-top: 6px;
     }
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap:12px;
-      margin-top: 16px;
-    }
-    .card{
+
+    .panel{
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 14px 14px 12px;
       box-shadow: var(--shadow-sm);
-      cursor: pointer;
-      transition: transform .08s ease, box-shadow .08s ease;
+      overflow: hidden;
+      margin-top: 14px;
     }
-    .card:hover{
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
+
+    table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead th{
+      text-align: left;
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: #fafafa;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody td{
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tbody tr{
+      cursor: pointer;
+      transition: background .08s ease;
+    }
+    tbody tr:hover{
+      background: #fbfbff;
     }
     .word{
-      font-size: 20px;
       font-weight: 800;
-      margin: 0;
-      line-height: 1.2;
+      font-size: 15px;
     }
-    .meaning{
-      margin-top: 8px;
-      color: var(--text);
-      opacity: .92;
-      line-height: 1.5;
-      font-size: 14px;
-      white-space: pre-wrap;
+    .sub{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .chips{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .chip{
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 12px;
+      background: #fafafa;
+      color: #374151;
+      white-space: nowrap;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
     }
 
     /* Modal */
@@ -102,9 +150,8 @@
       z-index: 50;
     }
     .backdrop.open{ display:flex; }
-
     .modal{
-      width: min(820px, 100%);
+      width: min(860px, 100%);
       max-height: min(78vh, 760px);
       overflow:auto;
       background: #fff;
@@ -151,20 +198,6 @@
       text-transform: uppercase;
       letter-spacing: .06em;
     }
-    .chips{
-      display:flex;
-      gap:6px;
-      flex-wrap:wrap;
-      margin-top: 8px;
-    }
-    .chip{
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 12px;
-      background: #fafafa;
-      color: #374151;
-    }
     ul.ex{
       margin: 6px 0 0 0;
       padding-left: 18px;
@@ -180,18 +213,55 @@
       padding: 10px 12px;
       white-space: pre-wrap;
     }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    @media (max-width: 720px){
+      thead th:nth-child(3),
+      tbody td:nth-child(3),
+      thead th:nth-child(4),
+      tbody td:nth-child(4){
+        display:none;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>📚 My English Vocab</h1>
-    <div class="search">
+    <div>
+      <h1>📚 My English Vocab</h1>
+      <div class="meta" id="count"></div>
+    </div>
+
+    <div class="controls">
       <input id="q" placeholder="検索（word / meaning / tags / notes）" />
+      <span class="pill">
+        <span class="meta" style="margin:0;">Sort</span>
+        <select id="sort">
+          <option value="alpha">A → Z</option>
+          <option value="new">Created: New → Old</option>
+          <option value="old">Created: Old → New</option>
+        </select>
+      </span>
+      <a class="pill" href="./data/words.csv" download style="font-size:14px;">
+        ⬇ CSV
+      </a>
     </div>
   </header>
 
-  <div class="meta" id="count"></div>
-  <div class="grid" id="grid"></div>
+  <div class="panel">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 28%;">Word</th>
+          <th>Meaning (JP)</th>
+          <th style="width: 16%;">POS</th>
+          <th style="width: 18%;">Created</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 
   <!-- Modal -->
   <div class="backdrop" id="backdrop" aria-hidden="true">
@@ -247,36 +317,84 @@ function escapeHtml(s) {
     "'":'&#39;'
   }[c]));
 }
-
 function norm(s){ return (s||"").toLowerCase(); }
 
-let data = [];
+function parseDateSafe(iso){
+  const d = new Date(iso || "");
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtDate(iso){
+  const d = parseDateSafe(iso);
+  if (!d) return "";
+  // 例: 2026-02-12
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
 
-function render(list) {
+let data = [];
+let current = [];
+
+function sortList(list, mode){
+  const out = [...list];
+  if (mode === "alpha") {
+    out.sort((a,b) => (a.word||"").localeCompare((b.word||""), "en", { sensitivity:"base" }));
+  } else if (mode === "new") {
+    out.sort((a,b) => {
+      const da = parseDateSafe(a.created_at)?.getTime() ?? 0;
+      const db = parseDateSafe(b.created_at)?.getTime() ?? 0;
+      return db - da;
+    });
+  } else if (mode === "old") {
+    out.sort((a,b) => {
+      const da = parseDateSafe(a.created_at)?.getTime() ?? 0;
+      const db = parseDateSafe(b.created_at)?.getTime() ?? 0;
+      return da - db;
+    });
+  }
+  return out;
+}
+
+function render(list){
   document.getElementById("count").textContent = `${list.length} words`;
-  document.getElementById("grid").innerHTML = list.map(item => {
+  const tbody = document.getElementById("tbody");
+  tbody.innerHTML = list.map(it => {
+    const pos = it.part_of_speech || "";
+    const created = fmtDate(it.created_at || "");
     return `
-      <div class="card" data-word="${escapeHtml(item.word)}" tabindex="0">
-        <p class="word">${escapeHtml(item.word)}</p>
-        <div class="meaning">${escapeHtml(item.meaning_ja || "")}</div>
-      </div>
+      <tr data-word="${escapeHtml(it.word)}" tabindex="0">
+        <td>
+          <div class="word">${escapeHtml(it.word)}</div>
+          <div class="sub">${escapeHtml(it.pronunciation || "")}</div>
+        </td>
+        <td>${escapeHtml(it.meaning_ja || "")}</td>
+        <td>${escapeHtml(pos)}</td>
+        <td>${escapeHtml(created)}</td>
+      </tr>
     `;
   }).join("");
 }
 
-function apply(q) {
+function applyFilters(){
+  const q = document.getElementById("q").value || "";
+  const sort = document.getElementById("sort").value;
+
   const nq = norm(q);
-  if (!nq) return render(data);
+  let list = data;
 
-  const filtered = data.filter(it => {
-    const hay = [
-      it.word, it.meaning_ja, it.part_of_speech, it.pronunciation, it.notes,
-      ...(it.tags||[]), ...(it.synonyms||[]), ...(it.examples||[])
-    ].map(norm).join(" ");
-    return hay.includes(nq);
-  });
+  if (nq) {
+    list = data.filter(it => {
+      const hay = [
+        it.word, it.meaning_ja, it.part_of_speech, it.pronunciation, it.notes,
+        ...(it.tags||[]), ...(it.synonyms||[]), ...(it.examples||[])
+      ].map(norm).join(" ");
+      return hay.includes(nq);
+    });
+  }
 
-  render(filtered);
+  current = sortList(list, sort);
+  render(current);
 }
 
 function findByWord(word){
@@ -284,6 +402,7 @@ function findByWord(word){
   return data.find(it => norm(it.word) === key);
 }
 
+/* Modal */
 const backdrop = document.getElementById("backdrop");
 const closeBtn = document.getElementById("closeBtn");
 
@@ -296,7 +415,6 @@ function openModal(item){
 
   document.getElementById("modalMeaning").textContent = item.meaning_ja || "";
 
-  // examples
   const exList = document.getElementById("modalExamples");
   const examples = (item.examples || []).filter(Boolean);
   if (examples.length) {
@@ -307,7 +425,6 @@ function openModal(item){
     document.getElementById("examplesSection").style.display = "none";
   }
 
-  // chips (tags + synonyms)
   const chips = [...(item.tags||[]), ...(item.synonyms||[])].filter(Boolean);
   const chipsEl = document.getElementById("modalChips");
   if (chips.length) {
@@ -318,7 +435,6 @@ function openModal(item){
     document.getElementById("chipsSection").style.display = "none";
   }
 
-  // notes
   const notes = (item.notes || "").trim();
   const notesEl = document.getElementById("modalNotes");
   if (notes) {
@@ -329,7 +445,6 @@ function openModal(item){
     document.getElementById("notesSection").style.display = "none";
   }
 
-  // source
   const src = item.source_issue || "";
   document.getElementById("modalSource").innerHTML =
     src.startsWith("http")
@@ -353,19 +468,16 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
 
-document.getElementById("grid").addEventListener("click", (e) => {
-  const card = e.target.closest(".card");
-  if (!card) return;
-  const word = card.getAttribute("data-word");
-  openModal(findByWord(word));
+document.getElementById("tbody").addEventListener("click", (e) => {
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  openModal(findByWord(tr.getAttribute("data-word")));
 });
-
-document.getElementById("grid").addEventListener("keydown", (e) => {
+document.getElementById("tbody").addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
-  const card = e.target.closest(".card");
-  if (!card) return;
-  const word = card.getAttribute("data-word");
-  openModal(findByWord(word));
+  const tr = e.target.closest("tr");
+  if (!tr) return;
+  openModal(findByWord(tr.getAttribute("data-word")));
 });
 
 window.addEventListener("error", (e) => {
@@ -374,8 +486,9 @@ window.addEventListener("error", (e) => {
 
 (async () => {
   data = await load();
-  render(data);
-  document.getElementById("q").addEventListener("input", e => apply(e.target.value));
+  applyFilters();
+  document.getElementById("q").addEventListener("input", applyFilters);
+  document.getElementById("sort").addEventListener("change", applyFilters);
 })();
 </script>
 </body>
