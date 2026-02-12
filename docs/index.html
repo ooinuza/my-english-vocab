@@ -29,13 +29,27 @@
 
 <script>
 async function load() {
-const res = await fetch("./data/words.json", { cache: "no-store" });
+  const res = await fetch("./data/words.json", { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error("Failed to load words.json: " + res.status);
+  }
+  return await res.json();
 }
 
 function card(item) {
-  const ex = (item.examples || []).slice(0,2).map(s => `<li>${escapeHtml(s)}</li>`).join("");
-  const tags = (item.tags || []).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join("");
-  const syn  = (item.synonyms || []).map(s => `<span class="chip">${escapeHtml(s)}</span>`).join("");
+  const ex = (item.examples || [])
+    .slice(0,2)
+    .map(s => `<li>${escapeHtml(s)}</li>`)
+    .join("");
+
+  const tags = (item.tags || [])
+    .map(t => `<span class="chip">${escapeHtml(t)}</span>`)
+    .join("");
+
+  const syn = (item.synonyms || [])
+    .map(s => `<span class="chip">${escapeHtml(s)}</span>`)
+    .join("");
+
   return `
   <div class="card">
     <p class="word">${escapeHtml(item.word)}</p>
@@ -47,7 +61,13 @@ function card(item) {
 }
 
 function escapeHtml(s) {
-  return (s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return (s || "").replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
 }
 
 let data = [];
@@ -63,20 +83,34 @@ function norm(s){ return (s||"").toLowerCase(); }
 function apply(q) {
   const nq = norm(q);
   if (!nq) return render(data);
+
   filtered = data.filter(it => {
     const hay = [
-      it.word, it.meaning_ja, it.part_of_speech, it.pronunciation, it.notes,
-      ...(it.tags||[]), ...(it.synonyms||[]), ...(it.examples||[])
+      it.word,
+      it.meaning_ja,
+      it.part_of_speech,
+      it.pronunciation,
+      it.notes,
+      ...(it.tags||[]),
+      ...(it.synonyms||[]),
+      ...(it.examples||[])
     ].map(norm).join(" ");
+
     return hay.includes(nq);
   });
+
   render(filtered);
 }
+
+window.addEventListener("error", (e) => {
+  document.getElementById("count").textContent = "Error: " + e.message;
+});
 
 (async () => {
   data = await load();
   render(data);
-  document.getElementById("q").addEventListener("input", e => apply(e.target.value));
+  document.getElementById("q")
+    .addEventListener("input", e => apply(e.target.value));
 })();
 </script>
 </body>
