@@ -38,10 +38,10 @@
       gap:10px;
       align-items:center;
       flex-wrap:wrap;
-      width: min(720px, 100%);
+      width: min(860px, 100%);
       justify-content:flex-end;
     }
-    input, select, button, a.btn{
+    input, select, button, a.btn, a.pillBtn{
       font-size: 14px;
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -126,6 +126,25 @@
     a { color: var(--accent); text-decoration: none; }
     a:hover{ text-decoration: underline; }
 
+    a.pillBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border-radius: 999px;
+      padding: 10px 12px;
+      color: #111827;
+      text-decoration:none;
+      white-space: nowrap;
+    }
+    a.pillBtn:hover{
+      text-decoration:none;
+      border-color:#d1d5db;
+    }
+    a.primaryBtn{
+      border-color: rgba(79,70,229,.28);
+      box-shadow: 0 0 0 4px rgba(99,102,241,.08);
+    }
+
     @media (max-width: 720px){
       thead th:nth-child(3),
       tbody td:nth-child(3),
@@ -192,10 +211,6 @@
       cursor: pointer;
     }
     a.btn:hover{ text-decoration:none; border-color:#d1d5db; }
-    .primary{
-      border-color: rgba(79,70,229,.25);
-      box-shadow: 0 0 0 4px rgba(99,102,241,.08);
-    }
 
     .section{
       margin-top: 12px;
@@ -233,7 +248,10 @@
     </div>
 
     <div class="controls">
+      <a class="pillBtn primaryBtn" id="newBtn" href="#" target="_blank" rel="noreferrer">＋ New word</a>
+
       <input id="q" placeholder="検索（word / meaning / tags / notes）" />
+
       <span class="pill">
         <span class="meta" style="margin:0;">Sort</span>
         <select id="sort">
@@ -242,9 +260,8 @@
           <option value="old">Created: Old → New</option>
         </select>
       </span>
-      <a class="pill" href="./data/words.csv" download style="font-size:14px;">
-        ⬇ CSV
-      </a>
+
+      <a class="pillBtn" href="./data/words.csv" download>⬇ CSV</a>
     </div>
   </header>
 
@@ -271,7 +288,7 @@
           <div class="modalSub" id="modalSub"></div>
         </div>
         <div class="btnRow">
-          <a class="btn primary" id="editBtn" href="#" target="_blank" rel="noreferrer">✏️ GitHubで修正</a>
+          <a class="btn" id="sourceBtn" href="#" target="_blank" rel="noreferrer">🧾 元Issueを開く</a>
           <a class="btn" id="copyBtn" href="#">📋 コピー</a>
           <a class="btn" id="closeBtn" href="#">閉じる (Esc)</a>
         </div>
@@ -307,6 +324,8 @@
 
 <script>
 async function load() {
+  // Pages側は docs/data/words.json を参照する構成
+  // （あなたの repo もこのパスで動いているはず）
   const res = await fetch("./data/words.json", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load words.json: " + res.status);
   return await res.json();
@@ -342,14 +361,14 @@ function repoInfo(){
   const repo = segs[0] || "";
   return { user, repo };
 }
-function updateIssueUrlFor(word){
+
+function newIssueUrl(){
   const { user, repo } = repoInfo();
   if (!user || !repo) return "#";
-  // update_word.yml を作る想定（下の説明参照）
   const base = `https://github.com/${user}/${repo}/issues/new`;
   const params = new URLSearchParams();
-  params.set("template", "update_word.yml");
-  params.set("title", `word: ${word}`);
+  params.set("template", "new_word.yml");
+  params.set("title", "word: ");
   return `${base}?${params.toString()}`;
 }
 
@@ -437,7 +456,6 @@ function openModal(item){
   document.getElementById("modalSub").textContent =
     [item.part_of_speech, item.pronunciation].filter(Boolean).join("  ");
 
-  // Meaning
   document.getElementById("modalMeaning").textContent = item.meaning_ja || "";
 
   // Variant spelling (other_spelling)
@@ -479,16 +497,21 @@ function openModal(item){
   const synText = syns.length ? `Synonyms: ${syns.join(", ")}` : "Synonyms: -";
   document.getElementById("modalTagsSyn").textContent = `${tagText}  /  ${synText}`;
 
-  // Source
+  // Source display + source button
   const src = item.source_issue || "";
   document.getElementById("modalSource").innerHTML =
     src.startsWith("http")
       ? `<a href="${escapeHtml(src)}" target="_blank" rel="noreferrer">Issue link</a>`
       : escapeHtml(src);
 
-  // Edit button -> opens update issue form (template=update_word.yml)
-  const editBtn = document.getElementById("editBtn");
-  editBtn.href = updateIssueUrlFor(item.word);
+  const sourceBtn = document.getElementById("sourceBtn");
+  if (src.startsWith("http")) {
+    sourceBtn.href = src;
+    sourceBtn.style.display = "";
+  } else {
+    sourceBtn.href = "#";
+    sourceBtn.style.display = "none";
+  }
 
   backdrop.classList.add("open");
   backdrop.setAttribute("aria-hidden", "false");
@@ -525,7 +548,7 @@ document.getElementById("tbody").addEventListener("keydown", (e) => {
   openModal(findByWord(tr.getAttribute("data-word")));
 });
 
-// Copy button: copies current entry summary to clipboard (paste into update form if needed)
+// Copy button: copies current entry summary to clipboard (quick paste into issue edit if needed)
 document.getElementById("copyBtn").addEventListener("click", async (e) => {
   e.preventDefault();
   if (!selected) return;
@@ -548,10 +571,10 @@ document.getElementById("copyBtn").addEventListener("click", async (e) => {
 
   try {
     await navigator.clipboard.writeText(text);
+    const old = document.getElementById("count").textContent;
     document.getElementById("count").textContent = "Copied ✅";
-    setTimeout(() => applyFilters(), 900);
+    setTimeout(() => { document.getElementById("count").textContent = old; }, 900);
   } catch {
-    // Fallback
     prompt("コピーできなかったので手動コピーしてね:", text);
   }
 });
@@ -561,6 +584,10 @@ window.addEventListener("error", (e) => {
 });
 
 (async () => {
+  // Set top button
+  document.getElementById("newBtn").href = newIssueUrl();
+
+  // Load & render
   data = await load();
   applyFilters();
   document.getElementById("q").addEventListener("input", applyFilters);
