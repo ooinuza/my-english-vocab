@@ -8,7 +8,7 @@ body:
     id: word
     attributes:
       label: Word
-      placeholder: generate
+      placeholder: conflict
     validations:
       required: true
 
@@ -26,17 +26,39 @@ body:
     validations:
       required: true
 
+  - type: dropdown
+    id: british
+    attributes:
+      label: British English?
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+
+  - type: input
+    id: spelling_us
+    attributes:
+      label: US spelling (if different)
+      placeholder: color
+
+  - type: input
+    id: spelling_uk
+    attributes:
+      label: UK spelling (if different)
+      placeholder: colour
+
   - type: input
     id: pronunciation
     attributes:
       label: Pronunciation (IPA etc.)
-      placeholder: /ˈdʒenəreɪt/
+      placeholder: /ˈkɒnflɪkt/
 
   - type: input
     id: meaning_ja
     attributes:
       label: Meaning (Japanese)
-      placeholder: 生み出す、生成する
+      placeholder: 衝突、対立
     validations:
       required: true
 
@@ -45,20 +67,25 @@ body:
     attributes:
       label: Examples (one per line)
       placeholder: |
-        The engine generates electricity.
-        Ideas generate change.
+        His statements on the subject conflicted.
 
   - type: input
     id: synonyms
     attributes:
       label: Synonyms (comma-separated)
-      placeholder: produce, create
+      placeholder: struggle, clash
 
   - type: input
     id: tags
     attributes:
       label: Tags (comma-separated)
-      placeholder: academic, news
+      placeholder: news, academic
+
+  - type: input
+    id: image_url
+    attributes:
+      label: Image URL (optional)
+      placeholder: https://.../image.png
 
   - type: textarea
     id: notes
