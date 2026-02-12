@@ -29,8 +29,7 @@
 
 <script>
 async function load() {
-  const res = await fetch("../data/words.json", { cache: "no-store" });
-  return await res.json();
+const res = await fetch("./data/words.json", { cache: "no-store" });
 }
 
 function card(item) {
