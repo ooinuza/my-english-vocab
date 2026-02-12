@@ -8,12 +8,9 @@ ISSUE_URL = os.environ.get("ISSUE_URL", "")
 DATA_JSON = "data/words.json"
 DATA_CSV = "data/words.csv"
 
+NO_CHANGE_SENTINELS = {"(no change)", "(no-change)", "no change", "no-change"}
+
 def parse_field(label: str) -> str:
-    """
-    Parse a GitHub Issue Form field rendered in Markdown:
-      ### Label
-      value
-    """
     pattern = rf"^### {re.escape(label)}\s*\n(.+?)(?=\n### |\Z)"
     m = re.search(pattern, ISSUE_BODY, flags=re.MULTILINE | re.DOTALL)
     if not m:
@@ -24,7 +21,6 @@ def parse_field(label: str) -> str:
     return val
 
 def parse_any(labels):
-    """Return first non-empty field among possible labels."""
     for lb in labels:
         v = parse_field(lb)
         if v.strip():
@@ -83,59 +79,34 @@ def save_csv(items):
 def find_index(items, word: str):
     key = (word or "").strip().lower()
     for i, it in enumerate(items):
-        if (it.get("word","").strip().lower() == key):
+        if it.get("word","").strip().lower() == key:
             return i
     return -1
 
+def normalize_no_change(v: str) -> str:
+    if not v:
+        return ""
+    if v.strip().lower() in NO_CHANGE_SENTINELS:
+        return ""
+    return v.strip()
+
 def main():
-    # Accept both template variants (label text may differ over time)
-    word = parse_any([
-        "Word",
-        "Word (must match existing)",
-    ]).strip()
+    word = parse_any(["Word", "Word (must match existing)"]).strip()
     if not word:
         raise SystemExit("Word is required but missing.")
 
-    incoming_pos = parse_any([
-        "Part of speech",
-        "Part of Speech",
-    ]).strip()
-
+    incoming_pos = normalize_no_change(parse_any(["Part of speech", "Part of Speech"]).strip())
     incoming_other = parse_any([
         "Other spelling (UK/US if different)",
         "Other spelling (if different)",
         "Other spelling",
     ]).strip()
-
-    incoming_pron = parse_any([
-        "Pronunciation (IPA etc.)",
-        "Pronunciation",
-    ]).strip()
-
-    incoming_meaning = parse_any([
-        "Meaning (Japanese)",
-        "Meaning (JP)",
-        "Meaning",
-    ]).strip()
-
-    incoming_examples_raw = parse_any([
-        "Examples (one per line)",
-        "Examples",
-    ])
-
-    incoming_syn_raw = parse_any([
-        "Synonyms (comma-separated)",
-        "Synonyms",
-    ])
-
-    incoming_tags_raw = parse_any([
-        "Tags (comma-separated)",
-        "Tags",
-    ])
-
-    incoming_notes = parse_any([
-        "Notes",
-    ]).strip()
+    incoming_pron = parse_any(["Pronunciation (IPA etc.)", "Pronunciation"]).strip()
+    incoming_meaning = parse_any(["Meaning (Japanese)", "Meaning (JP)", "Meaning"]).strip()
+    incoming_examples_raw = parse_any(["Examples (one per line)", "Examples"])
+    incoming_syn_raw = parse_any(["Synonyms (comma-separated)", "Synonyms"])
+    incoming_tags_raw = parse_any(["Tags (comma-separated)", "Tags"])
+    incoming_notes = parse_any(["Notes"]).strip()
 
     incoming_examples = [l.strip() for l in incoming_examples_raw.splitlines() if l.strip()] if incoming_examples_raw.strip() else []
     incoming_synonyms = split_csv_like(incoming_syn_raw) if incoming_syn_raw.strip() else []
@@ -148,7 +119,7 @@ def main():
     source = ISSUE_URL or f"#{ISSUE_NUMBER}"
 
     if idx == -1:
-        # New entry: require minimum information
+        # New entry needs meaning at least
         if not incoming_meaning:
             raise SystemExit("Meaning (Japanese) is required for a new word.")
         entry = {
@@ -169,10 +140,7 @@ def main():
         items.append(entry)
         status = "added"
     else:
-        # Update entry: only apply non-empty fields; keep existing otherwise
         it = items[idx]
-
-        # Keep canonical word (but normalize formatting)
         it["word"] = word
 
         if incoming_pos:
@@ -184,7 +152,6 @@ def main():
         if incoming_meaning:
             it["meaning_ja"] = incoming_meaning
 
-        # Lists: replace only if user provided something (including explicit empty lines not possible)
         if incoming_examples_raw.strip():
             it["examples"] = incoming_examples
         if incoming_syn_raw.strip():
