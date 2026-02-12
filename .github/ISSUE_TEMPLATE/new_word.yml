@@ -29,17 +29,8 @@ body:
   - type: input
     id: other_spelling
     attributes:
-      label: Other spelling (if different)
+      label: Other spelling (UK/US if different)
       placeholder: colour
-
-  - type: dropdown
-    id: other_spelling_type
-    attributes:
-      label: Other spelling type
-      options:
-        - None
-        - UK
-        - US
 
   - type: input
     id: pronunciation
