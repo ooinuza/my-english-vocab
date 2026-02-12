@@ -9,22 +9,17 @@ DATA_JSON = "data/words.json"
 DATA_CSV = "data/words.csv"
 
 def parse_field(label: str) -> str:
-    # GitHub Issue form renders as Markdown like:
-    # ### Word
-    # generate
     pattern = rf"^### {re.escape(label)}\s*\n(.+?)(?=\n### |\Z)"
     m = re.search(pattern, ISSUE_BODY, flags=re.MULTILINE | re.DOTALL)
     if not m:
         return ""
     val = m.group(1).strip()
-    # Sometimes empty fields are "_No response_"
     if val == "_No response_":
         return ""
     return val
 
 def split_csv_like(s: str):
     parts = [p.strip() for p in s.split(",") if p.strip()]
-    # de-dup preserving order
     seen = set()
     out = []
     for p in parts:
@@ -45,9 +40,10 @@ def save_json(items):
         json.dump(items, f, ensure_ascii=False, indent=2)
 
 def save_csv(items):
-    # flat CSV for portability
     fieldnames = [
-        "word","part_of_speech","pronunciation","meaning_ja",
+        "word","part_of_speech",
+        "other_spelling",
+        "pronunciation","meaning_ja",
         "examples","synonyms","tags","notes",
         "mastery","last_reviewed","created_at","source_issue"
     ]
@@ -58,6 +54,7 @@ def save_csv(items):
             w.writerow({
                 "word": it.get("word",""),
                 "part_of_speech": it.get("part_of_speech",""),
+                "other_spelling": it.get("other_spelling",""),
                 "pronunciation": it.get("pronunciation",""),
                 "meaning_ja": it.get("meaning_ja",""),
                 "examples": " | ".join(it.get("examples",[])),
@@ -74,7 +71,6 @@ def upsert(items, entry):
     key = entry["word"].strip().lower()
     for i, it in enumerate(items):
         if it.get("word","").strip().lower() == key:
-            # update existing but keep created_at if already present
             entry["created_at"] = it.get("created_at", entry["created_at"])
             items[i] = entry
             return "updated"
@@ -85,9 +81,11 @@ def main():
     word = parse_field("Word")
     if not word:
         raise SystemExit("Word is required but missing.")
+
     entry = {
         "word": word.strip(),
         "part_of_speech": parse_field("Part of speech").strip(),
+        "other_spelling": parse_field("Other spelling (UK/US if different)").strip(),
         "pronunciation": parse_field("Pronunciation (IPA etc.)").strip(),
         "meaning_ja": parse_field("Meaning (Japanese)").strip(),
         "examples": [l.strip() for l in parse_field("Examples (one per line)").splitlines() if l.strip()],
@@ -102,7 +100,6 @@ def main():
 
     items = load_json()
     status = upsert(items, entry)
-    # sort by word
     items.sort(key=lambda x: x.get("word","").lower())
     save_json(items)
     save_csv(items)
