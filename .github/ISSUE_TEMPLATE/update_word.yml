@@ -1,0 +1,70 @@
+name: Update word
+description: Update an existing vocabulary entry
+title: "update: "
+labels:
+  - vocab
+body:
+  - type: markdown
+    attributes:
+      value: |
+        既存の単語を更新します。
+        Word は必ず既存の綴りと同じにしてください。
+        同じ word なら自動で上書き更新されます。
+
+  - type: input
+    id: word
+    attributes:
+      label: Word (must match existing)
+      placeholder: color
+    validations:
+      required: true
+
+  - type: dropdown
+    id: pos
+    attributes:
+      label: Part of speech
+      options:
+        - noun
+        - verb
+        - adjective
+        - adverb
+        - phrase
+        - other
+
+  - type: input
+    id: other_spelling
+    attributes:
+      label: Other spelling (UK/US if different)
+      placeholder: colour
+
+  - type: input
+    id: pronunciation
+    attributes:
+      label: Pronunciation (IPA etc.)
+      placeholder: /ˈkʌlər/
+
+  - type: input
+    id: meaning_ja
+    attributes:
+      label: Meaning (Japanese)
+      placeholder: 色
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples (one per line)
+
+  - type: input
+    id: synonyms
+    attributes:
+      label: Synonyms (comma-separated)
+
+  - type: input
+    id: tags
+    attributes:
+      label: Tags (comma-separated)
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
