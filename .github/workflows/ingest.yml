@@ -29,23 +29,6 @@ jobs:
         run: |
           python tools/ingest_issue.py
 
-      - name: Debug output
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-        run: |
-          echo "==== ISSUE_BODY length ===="
-          python - << 'PY'
-import os
-b = os.environ.get("ISSUE_BODY","")
-print(len(b))
-print("==== FIRST 500 CHARS ====")
-print(b[:500])
-PY
-          echo "==== data/words.json ===="
-          cat data/words.json || true
-          echo "==== git status ===="
-          git status --porcelain
-
       - name: Copy data into docs for Pages
         run: |
           mkdir -p docs/data
