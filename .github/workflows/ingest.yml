@@ -26,18 +26,16 @@ jobs:
         run: |
           python tools/ingest_issue.py
 
-      - name: Commit changes
-        run: |
-          git config user.name "vocab-bot"
-          git config user.email "vocab-bot@users.noreply.github.com"
-          git add data/words.json data/words.csv
-          git commit -m "Update vocab data from issue #${{ github.event.issue.number }}" || exit 0
-          git push
-          
       - name: Copy data into docs for Pages
         run: |
           mkdir -p docs/data
           cp data/words.json docs/data/words.json
-
-          git add data/words.json data/words.csv docs/data/words.json docs/data/words.csv
           cp data/words.csv docs/data/words.csv
+
+      - name: Commit changes
+        run: |
+          git config user.name "vocab-bot"
+          git config user.email "vocab-bot@users.noreply.github.com"
+          git add data/words.json data/words.csv docs/data/words.json docs/data/words.csv
+          git commit -m "Update vocab data from issue #${{ github.event.issue.number }}" || exit 0
+          git push
