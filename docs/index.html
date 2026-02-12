@@ -5,59 +5,237 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>My English Vocab</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 24px; max-width: 980px; }
-    header { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-    input { padding:10px 12px; font-size:16px; width:min(520px, 100%); }
-    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-top: 16px;}
-    .card { border:1px solid #ddd; border-radius:12px; padding:12px; }
-    .word { font-size: 22px; font-weight: 700; margin:0; }
-    .meta { opacity:.75; font-size: 13px; margin-top: 6px; }
-    .meaning { margin-top: 10px; }
-    .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top: 10px; }
-    .chip { border:1px solid #ddd; border-radius:999px; padding:3px 8px; font-size: 12px; opacity:.85; }
-    .ex { margin-top:10px; padding-left: 18px; }
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --border:#e5e7eb;
+      --shadow: 0 10px 24px rgba(0,0,0,.08);
+      --shadow-sm: 0 6px 16px rgba(0,0,0,.06);
+      --radius: 16px;
+    }
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      margin: 24px;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 980px;
+    }
+    header{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom: 12px;
+    }
+    h1{ margin:0; font-size: 28px; letter-spacing: .2px; }
+    .search{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      width: min(560px, 100%);
+    }
+    input{
+      padding:12px 14px;
+      font-size:16px;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      outline: none;
+      background: #fff;
+      box-shadow: 0 1px 0 rgba(0,0,0,.02);
+    }
+    input:focus{
+      border-color:#c7d2fe;
+      box-shadow: 0 0 0 4px rgba(99,102,241,.15);
+    }
+    .meta{
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap:12px;
+      margin-top: 16px;
+    }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 14px 12px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .08s ease;
+    }
+    .card:hover{
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .word{
+      font-size: 20px;
+      font-weight: 800;
+      margin: 0;
+      line-height: 1.2;
+    }
+    .meaning{
+      margin-top: 8px;
+      color: var(--text);
+      opacity: .92;
+      line-height: 1.5;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
+    /* Modal */
+    .backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+    .backdrop.open{ display:flex; }
+
+    .modal{
+      width: min(820px, 100%);
+      max-height: min(78vh, 760px);
+      overflow:auto;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 16px 16px 14px;
+    }
+    .modalHeader{
+      display:flex;
+      justify-content: space-between;
+      align-items:flex-start;
+      gap:12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modalTitle{
+      margin:0;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.2;
+    }
+    .modalSub{
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .closeBtn{
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .section{
+      margin-top: 12px;
+    }
+    .section h3{
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .chips{
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      margin-top: 8px;
+    }
+    .chip{
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #fafafa;
+      color: #374151;
+    }
+    ul.ex{
+      margin: 6px 0 0 0;
+      padding-left: 18px;
+      line-height: 1.6;
+    }
+    .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      color: #374151;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1 style="margin:0;">📚 My English Vocab</h1>
-    <input id="q" placeholder="検索（word / meaning / tags / notes）" />
+    <h1>📚 My English Vocab</h1>
+    <div class="search">
+      <input id="q" placeholder="検索（word / meaning / tags / notes）" />
+    </div>
   </header>
 
   <div class="meta" id="count"></div>
   <div class="grid" id="grid"></div>
 
+  <!-- Modal -->
+  <div class="backdrop" id="backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modalHeader">
+        <div>
+          <h2 class="modalTitle" id="modalTitle"></h2>
+          <div class="modalSub" id="modalSub"></div>
+        </div>
+        <button class="closeBtn" id="closeBtn">閉じる (Esc)</button>
+      </div>
+
+      <div class="section">
+        <h3>Meaning</h3>
+        <div id="modalMeaning"></div>
+      </div>
+
+      <div class="section" id="examplesSection" style="display:none;">
+        <h3>Examples</h3>
+        <ul class="ex" id="modalExamples"></ul>
+      </div>
+
+      <div class="section" id="chipsSection" style="display:none;">
+        <h3>Tags / Synonyms</h3>
+        <div class="chips" id="modalChips"></div>
+      </div>
+
+      <div class="section" id="notesSection" style="display:none;">
+        <h3>Notes</h3>
+        <div class="mono" id="modalNotes"></div>
+      </div>
+
+      <div class="section">
+        <h3>Source</h3>
+        <div class="meta" id="modalSource"></div>
+      </div>
+    </div>
+  </div>
+
 <script>
 async function load() {
   const res = await fetch("./data/words.json", { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error("Failed to load words.json: " + res.status);
-  }
+  if (!res.ok) throw new Error("Failed to load words.json: " + res.status);
   return await res.json();
-}
-
-function card(item) {
-  const ex = (item.examples || [])
-    .slice(0,2)
-    .map(s => `<li>${escapeHtml(s)}</li>`)
-    .join("");
-
-  const tags = (item.tags || [])
-    .map(t => `<span class="chip">${escapeHtml(t)}</span>`)
-    .join("");
-
-  const syn = (item.synonyms || [])
-    .map(s => `<span class="chip">${escapeHtml(s)}</span>`)
-    .join("");
-
-  return `
-  <div class="card">
-    <p class="word">${escapeHtml(item.word)}</p>
-    <div class="meta">${escapeHtml(item.part_of_speech || "")} ${escapeHtml(item.pronunciation || "")}</div>
-    <div class="meaning">${escapeHtml(item.meaning_ja || "")}</div>
-    ${(ex ? `<ul class="ex">${ex}</ul>` : "")}
-    <div class="chips">${tags}${syn}</div>
-  </div>`;
 }
 
 function escapeHtml(s) {
@@ -70,37 +248,125 @@ function escapeHtml(s) {
   }[c]));
 }
 
+function norm(s){ return (s||"").toLowerCase(); }
+
 let data = [];
-let filtered = [];
 
 function render(list) {
   document.getElementById("count").textContent = `${list.length} words`;
-  document.getElementById("grid").innerHTML = list.map(card).join("");
+  document.getElementById("grid").innerHTML = list.map(item => {
+    return `
+      <div class="card" data-word="${escapeHtml(item.word)}" tabindex="0">
+        <p class="word">${escapeHtml(item.word)}</p>
+        <div class="meaning">${escapeHtml(item.meaning_ja || "")}</div>
+      </div>
+    `;
+  }).join("");
 }
-
-function norm(s){ return (s||"").toLowerCase(); }
 
 function apply(q) {
   const nq = norm(q);
   if (!nq) return render(data);
 
-  filtered = data.filter(it => {
+  const filtered = data.filter(it => {
     const hay = [
-      it.word,
-      it.meaning_ja,
-      it.part_of_speech,
-      it.pronunciation,
-      it.notes,
-      ...(it.tags||[]),
-      ...(it.synonyms||[]),
-      ...(it.examples||[])
+      it.word, it.meaning_ja, it.part_of_speech, it.pronunciation, it.notes,
+      ...(it.tags||[]), ...(it.synonyms||[]), ...(it.examples||[])
     ].map(norm).join(" ");
-
     return hay.includes(nq);
   });
 
   render(filtered);
 }
+
+function findByWord(word){
+  const key = norm(word);
+  return data.find(it => norm(it.word) === key);
+}
+
+const backdrop = document.getElementById("backdrop");
+const closeBtn = document.getElementById("closeBtn");
+
+function openModal(item){
+  if (!item) return;
+
+  document.getElementById("modalTitle").textContent = item.word || "";
+  document.getElementById("modalSub").textContent =
+    [item.part_of_speech, item.pronunciation].filter(Boolean).join("  ");
+
+  document.getElementById("modalMeaning").textContent = item.meaning_ja || "";
+
+  // examples
+  const exList = document.getElementById("modalExamples");
+  const examples = (item.examples || []).filter(Boolean);
+  if (examples.length) {
+    exList.innerHTML = examples.map(s => `<li>${escapeHtml(s)}</li>`).join("");
+    document.getElementById("examplesSection").style.display = "";
+  } else {
+    exList.innerHTML = "";
+    document.getElementById("examplesSection").style.display = "none";
+  }
+
+  // chips (tags + synonyms)
+  const chips = [...(item.tags||[]), ...(item.synonyms||[])].filter(Boolean);
+  const chipsEl = document.getElementById("modalChips");
+  if (chips.length) {
+    chipsEl.innerHTML = chips.map(t => `<span class="chip">${escapeHtml(t)}</span>`).join("");
+    document.getElementById("chipsSection").style.display = "";
+  } else {
+    chipsEl.innerHTML = "";
+    document.getElementById("chipsSection").style.display = "none";
+  }
+
+  // notes
+  const notes = (item.notes || "").trim();
+  const notesEl = document.getElementById("modalNotes");
+  if (notes) {
+    notesEl.textContent = notes;
+    document.getElementById("notesSection").style.display = "";
+  } else {
+    notesEl.textContent = "";
+    document.getElementById("notesSection").style.display = "none";
+  }
+
+  // source
+  const src = item.source_issue || "";
+  document.getElementById("modalSource").innerHTML =
+    src.startsWith("http")
+      ? `<a href="${escapeHtml(src)}" target="_blank" rel="noreferrer">Issue link</a>`
+      : escapeHtml(src);
+
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+}
+
+function closeModal(){
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+}
+
+backdrop.addEventListener("click", (e) => {
+  if (e.target === backdrop) closeModal();
+});
+closeBtn.addEventListener("click", closeModal);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+document.getElementById("grid").addEventListener("click", (e) => {
+  const card = e.target.closest(".card");
+  if (!card) return;
+  const word = card.getAttribute("data-word");
+  openModal(findByWord(word));
+});
+
+document.getElementById("grid").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const card = e.target.closest(".card");
+  if (!card) return;
+  const word = card.getAttribute("data-word");
+  openModal(findByWord(word));
+});
 
 window.addEventListener("error", (e) => {
   document.getElementById("count").textContent = "Error: " + e.message;
@@ -109,8 +375,7 @@ window.addEventListener("error", (e) => {
 (async () => {
   data = await load();
   render(data);
-  document.getElementById("q")
-    .addEventListener("input", e => apply(e.target.value));
+  document.getElementById("q").addEventListener("input", e => apply(e.target.value));
 })();
 </script>
 </body>
